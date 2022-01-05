@@ -1,0 +1,118 @@
+@prefix kg:   <http://www.dke.jku.org/onto/mlph-kg#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix voc:  <http://www.dke.jku.org/onto/mlm-vocabulary#> .
+
+<http://www.dke.jku.org/onto/mlph-kg#Participant(ExperimentalStudyDesign)>
+        rdf:type          voc:InducedClass ;
+        voc:modeledClass  kg:Participant ;
+        voc:partOf        kg:ExperimentalStudyDesign ;
+        voc:subContextOf  <http://www.dke.jku.org/onto/mlph-kg#Participant(Study)> .
+
+kg:MicroRandomizedTrial
+        rdf:type           voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf    kg:ExperimentalStudyDesign ;
+        voc:partiallyUses  kg:HealthyParticipant , kg:Participant ;
+        voc:subContextOf   kg:ExperimentalStudyDesign ;
+        voc:uses           kg:Participant , kg:HealthyParticipant .
+
+<http://www.dke.jku.org/onto/mlph-kg#HealthyParticipant(HeartStudy)>
+        rdf:type          voc:InducedClass ;
+        voc:modeledClass  kg:HealthyParticipant ;
+        voc:partOf        kg:HeartStudy ;
+        voc:subContextOf  <http://www.dke.jku.org/onto/mlph-kg#HealthyParticipant(MicroRandomizedTrial)> , <http://www.dke.jku.org/onto/mlph-kg#Participant(HeartStudy)> .
+
+kg:ParticipantWithDiabetes
+        rdf:type          voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:AffectedParticipant ;
+        voc:partOf        kg:Study ;
+        voc:subContextOf  kg:AffectedParticipant .
+
+kg:OverweightParticipant
+        rdf:type          voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:AffectedParticipant ;
+        voc:partOf        kg:Study ;
+        voc:subContextOf  kg:AffectedParticipant .
+
+kg:Phase2  rdf:type       voc:OccurrenceClass , voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:StateOfParticipant ;
+        voc:partOf        kg:Participant ;
+        voc:subContextOf  kg:StateOfParticipant .
+
+kg:AffectedParticipant
+        rdf:type          voc:AbstractClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:Participant ;
+        voc:partOf        kg:Study ;
+        voc:subContextOf  kg:Participant .
+
+kg:Phase1  rdf:type       voc:OccurrenceClass , voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:StateOfParticipant ;
+        voc:partOf        kg:Participant ;
+        voc:subContextOf  kg:StateOfParticipant .
+
+<http://www.dke.jku.org/onto/mlph-kg#Participant(HeartStudy)>
+        rdf:type          voc:InducedClass ;
+        voc:modeledClass  kg:Participant ;
+        voc:partOf        kg:HeartStudy ;
+        voc:subContextOf  <http://www.dke.jku.org/onto/mlph-kg#Participant(MicroRandomizedTrial)> .
+
+<http://www.dke.jku.org/onto/mlph-kg#HealthyParticipant(ExperimentalStudyDesign)>
+        rdf:type          voc:InducedClass ;
+        voc:modeledClass  kg:HealthyParticipant ;
+        voc:partOf        kg:ExperimentalStudyDesign ;
+        voc:subContextOf  <http://www.dke.jku.org/onto/mlph-kg#HealthyParticipant(Study)> , <http://www.dke.jku.org/onto/mlph-kg#Participant(ExperimentalStudyDesign)> .
+
+<http://www.dke.jku.org/onto/mlph-kg#HealthyParticipant(MicroRandomizedTrial)>
+        rdf:type          voc:InducedClass ;
+        voc:modeledClass  kg:HealthyParticipant ;
+        voc:partOf        kg:MicroRandomizedTrial ;
+        voc:subContextOf  <http://www.dke.jku.org/onto/mlph-kg#HealthyParticipant(ExperimentalStudyDesign)> , <http://www.dke.jku.org/onto/mlph-kg#Participant(MicroRandomizedTrial)> .
+
+kg:StateOfParticipant
+        rdf:type    voc:OccurrenceClass , voc:ModeledClass ;
+        voc:partOf  kg:Participant .
+
+kg:JaneInHeartStudy  rdf:type  kg:OverweightParticipant , voc:DomainObject ;
+        voc:of            kg:HeartStudy ;
+        voc:subContextOf  kg:OverweightParticipant .
+
+<http://www.dke.jku.org/onto/mlph-kg#Participant(MicroRandomizedTrial)>
+        rdf:type          voc:InducedClass ;
+        voc:modeledClass  kg:Participant ;
+        voc:partOf        kg:MicroRandomizedTrial ;
+        voc:subContextOf  <http://www.dke.jku.org/onto/mlph-kg#Participant(ExperimentalStudyDesign)> .
+
+kg:RandomizedControlledTrial
+        rdf:type          voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:ExperimentalStudyDesign ;
+        voc:subContextOf  kg:ExperimentalStudyDesign .
+
+kg:Participant  rdf:type  voc:ModeledClass ;
+        voc:partOf  kg:Study .
+
+kg:HeartStudy  rdf:type    kg:MicroRandomizedTrial , voc:DomainObject ;
+        voc:partiallyUses  kg:HealthyParticipant , kg:Participant ;
+        voc:subContextOf   kg:MicroRandomizedTrial ;
+        voc:uses           kg:Participant , kg:HealthyParticipant .
+
+kg:ExperimentalStudyDesign
+        rdf:type           voc:AbstractClass , voc:ModeledClass ;
+        rdfs:subClassOf    kg:Study ;
+        voc:partiallyUses  kg:Participant , kg:HealthyParticipant ;
+        voc:subContextOf   kg:Study .
+
+kg:Study  rdf:type         voc:ModeledClass ;
+        voc:partiallyUses  kg:Participant , kg:HealthyParticipant .
+
+kg:ParticipantWithHeartDisease
+        rdf:type          voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:AffectedParticipant ;
+        voc:partOf        kg:Study ;
+        voc:subContextOf  kg:AffectedParticipant .
+
+kg:HealthyParticipant
+        rdf:type          voc:ConcreteClass , voc:ModeledClass ;
+        rdfs:subClassOf   kg:Participant ;
+        voc:partOf        kg:Study ;
+        voc:subContextOf  kg:Participant .
