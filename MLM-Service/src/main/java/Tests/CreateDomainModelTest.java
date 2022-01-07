@@ -10,7 +10,7 @@ public class CreateDomainModelTest {
 	public static void main(String[] args) {
 		
 		DomainModel dms = new DomainModel("myModel");
-		dms.deleteModel();
+		dms.clearModel();
 		
 		Resource study = dms.modelClass("Study");
 		Resource experimentalStudyDesign = dms.modelAbstarctClass("ExperimentalStudyDesign", study);
@@ -32,7 +32,7 @@ public class CreateDomainModelTest {
         Resource janeInHeartStudy = dms.createObject("JaneInHeartStudy", overweightParticipant, heartStudy);
         
         dms.createUse(mrt, healthyParticipant);
-        //dms.createUse(mrt, phase1);
+        dms.createUse(participant, phase1);
         
         /*Resource observation = dms.createOccurrenceClass("Observation", stateOfParticipant);
         Resource distalOutcome = dms.createOccurrenceClass("DistalOutcome", stateOfParticipant);

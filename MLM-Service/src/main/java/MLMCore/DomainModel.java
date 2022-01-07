@@ -59,12 +59,16 @@ public class DomainModel {
 			m_model.read(m_strModelFile);
 	}
 	
+	public void clearModel() {		
+		m_model = ModelFactory.createDefaultModel();
+		m_model.setNsPrefixes(getPrefixes());
+	}
+	
 	public boolean deleteModel() {		
 		File file = new File(m_strModelFile);
 		if(file.exists()) {
 			if(file.delete()) {
-				m_model = ModelFactory.createDefaultModel();
-				m_model.setNsPrefixes(getPrefixes());
+				clearModel();
 				return true;
 			}				
 		}
@@ -163,11 +167,10 @@ public class DomainModel {
 			propagatePartiallyUses();
 			deriveInducesClasses();
 			
-			write2File("Iteration" + iIterations);
+			//write2File("Iteration" + iIterations);
+			System.out.println("propagateModel iterative change: " + iIterations);
 			
-		}while(lPreviousSize < m_model.size());
-		
-		System.out.println("propagateModel iterative changes: " + (iIterations-1));		
+		}while(lPreviousSize < m_model.size());				
 	}
 
 	private void propagateSubContexts() {
@@ -196,18 +199,18 @@ public class DomainModel {
 		strStatement = "INSERT { ?x <" + MLM_Vocabulary.uses + "> ?c . }" +
 					   "WHERE { ?y <" + MLM_Vocabulary.uses + "> ?c . " +					   		   
 				               "?x <" + MLM_Vocabulary.subContextOf + ">+ ?y . " +
-				               "FILTER NOT EXISTS { ?c <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
-				               "FILTER NOT EXISTS { ?x <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
-				               "FILTER NOT EXISTS { ?y <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
+//				               "FILTER NOT EXISTS { ?c <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
+//				               "FILTER NOT EXISTS { ?x <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
+//				               "FILTER NOT EXISTS { ?y <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
 					        " }";
 		statements.add(strStatement);
 		
 		strStatement = "INSERT { ?x <" + MLM_Vocabulary.uses + "> ?d . }" +
 				   	   "WHERE { ?x <" + MLM_Vocabulary.uses + "> ?c . " +
 			                   "?c <" + RDFS.subClassOf + ">+ ?d . " +
-				               "FILTER NOT EXISTS { ?c <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
-				               "FILTER NOT EXISTS { ?d <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
-				               "FILTER NOT EXISTS { ?x <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
+//				               "FILTER NOT EXISTS { ?c <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
+//				               "FILTER NOT EXISTS { ?d <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
+//				               "FILTER NOT EXISTS { ?x <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . }" +
 			                " }";
 		statements.add(strStatement);
 	
@@ -249,8 +252,8 @@ public class DomainModel {
 							 "}";
 		statements.add(strStatement);
 		
-		//derive subclasses from modeled class
-		strStatement = "INSERT { ?inducedClass <" + MLM_Vocabulary.subContextOf + "> ?inducedSuperClass . }" +
+		//derive subClassOf/subContextOf from modeled class
+		strStatement = "INSERT { ?inducedClass <" + RDFS.subClassOf + "> ?inducedSuperClass . }" +
 					   "WHERE { ?inducedClass <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . " +
 					   		   "?inducedClass <" + MLM_Vocabulary.modeledClass + "> ?c . " +
 					   		   "?c <" + MLM_Vocabulary.subContextOf + "> ?c_SuperClass . " + 
@@ -261,33 +264,29 @@ public class DomainModel {
 					   		 "}";
 		statements.add(strStatement);
 		
-		//derive subclasses from context (partOf)
-		strStatement = "INSERT { ?inducedClass <" + MLM_Vocabulary.subContextOf + "> ?inducedSuperClass . }" +
-				   "WHERE { ?inducedClass <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . " +
-				   		   "?inducedClass <" + MLM_Vocabulary.parOf + "> ?x . " + 
-				   		   "?x <" + MLM_Vocabulary.subContextOf + "> ?x_SuperClass . " +				   		   
-				   		   "?inducedClass <" + MLM_Vocabulary.modeledClass + "> ?c . " +
-				   		   "BIND(STRAFTER(STR(?x_SuperClass), STR(" + m_Prefix + ":)) AS ?x_SuperClassName) ." +
-				   		   "BIND(STRAFTER(STR(?c), STR(" + m_Prefix + ":)) AS ?c_Name) ." +
-				   		   "BIND(IRI(STR(" + m_Prefix + ":) + ?c_Name + \"(\" + ?x_SuperClassName + \")\") AS ?inducedSuperClass) ." +				   		   
-				   		 "}";
+		//derive subClassOf/subContextOf from composite class (partOf - respectively context)
+		strStatement = "INSERT { ?inducedClass <" + RDFS.subClassOf + "> ?inducedSuperClass . }" +
+					   "WHERE { ?inducedClass <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . " +
+					   		   "?inducedClass <" + MLM_Vocabulary.parOf + "> ?x . " + 
+					   		   "?x <" + MLM_Vocabulary.subContextOf + "> ?x_SuperClass . " +
+					   		   "?inducedClass <" + MLM_Vocabulary.modeledClass + "> ?c . " +
+	
+					   		   "FILTER EXISTS { ?x_SuperClass <" + RDFS.subClassOf + "> ?x_SuperSuperClass . } " + //?x_SuperSuperClass is used to prevent the derivation of subClassOf/subContextOf properties to root composite classes
+					   		   "BIND(STRAFTER(STR(?x_SuperClass), STR(" + m_Prefix + ":)) AS ?x_SuperClassName) ." +
+					   		   "BIND(STRAFTER(STR(?c), STR(" + m_Prefix + ":)) AS ?c_Name) ." +
+					   		   "BIND(IRI(STR(" + m_Prefix + ":) + ?c_Name + \"(\" + ?x_SuperClassName + \")\") AS ?inducedSuperClass) ." +				   		   
+					   		 "}";
 		statements.add(strStatement);
 		
-//		//derive subclasses from modeled class
-//				strStatement = "INSERT { ?inducedClass <" + MLM_Vocabulary.subContextOf + "> ?c_SuperClass . }" +
-//							   "WHERE { ?inducedClass <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . " +
-//							   		   "?inducedClass <" + MLM_Vocabulary.modeledClass + "> ?c . " + 
-//							   		   "?c <" + MLM_Vocabulary.subContextOf + "> ?c_SuperClass . " + 
-//							   		 "}";
-//				statements.add(strStatement);
-//				
-//				//derive subclasses from context (partOf)
-//				strStatement = "INSERT { ?inducedClass <" + MLM_Vocabulary.subContextOf + "> ?x_SuperClass . }" +
-//						   "WHERE { ?inducedClass <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . " +
-//						   		   "?inducedClass <" + MLM_Vocabulary.parOf + "> ?x . " + 
-//						   		   "?x <" + MLM_Vocabulary.subContextOf + "> ?x_SuperClass . " + 
-//						   		 "}";		
-//				statements.add(strStatement);
+		//derive subClassOf/subContextOf to root composite classes
+		strStatement = "INSERT { ?inducedClass <" + RDFS.subClassOf + "> ?c . }" +
+					   "WHERE { ?inducedClass <" + RDF.type + "> <" + MLM_Vocabulary.InducedClass + "> . " +
+					   		   "?inducedClass <" + MLM_Vocabulary.parOf + "> ?x . " + 
+					   		   "?x <" + MLM_Vocabulary.subContextOf + "> ?x_SuperClass . " +
+					   		   "?inducedClass <" + MLM_Vocabulary.modeledClass + "> ?c . " +	
+					   		   "FILTER NOT EXISTS { ?x_SuperClass <" + RDFS.subClassOf + "> ?x_SuperSuperClass . } " +			   		   
+					   		 "}";
+		statements.add(strStatement);		
 		
 		updateModel(statements);
 	}
@@ -338,11 +337,12 @@ public class DomainModel {
 			if (!file.exists())
 				file.mkdirs();
 						
-			///###backup file for development purposes
-			String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+			///###backup file for development purposes			
 			file = new File(m_strModelFile);
-			if (file.exists())
+			if (file.exists()) {
+				String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 				file.renameTo(new File(m_strModelFile.replace(".ttl", "-" + timeStamp +".ttl")));
+			}
 			//###
 
 			try (OutputStream out = new FileOutputStream(m_strModelFile)) {
