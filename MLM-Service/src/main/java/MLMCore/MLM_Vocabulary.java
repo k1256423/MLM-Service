@@ -24,6 +24,7 @@ public class MLM_Vocabulary {
     public static Property uses = createProperty("uses");
     public static Property partiallyUses = createProperty("partiallyUses");
     public static Property modeledClass = createProperty("modeledClass");
+    public static Property level = createProperty("level");
     
     //public static Property localTo = createProperty("localTo");
    

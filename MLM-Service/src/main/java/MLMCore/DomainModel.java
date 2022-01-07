@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -36,6 +35,7 @@ import org.apache.jena.update.UpdateFactory;
 import org.apache.jena.update.UpdateRequest;
 import org.apache.jena.vocabulary.RDF;
 import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.XSD;
 
 public class DomainModel {
 
@@ -81,6 +81,7 @@ public class DomainModel {
 		prefixes.setNsPrefix("rdf", RDF.getURI());
 		prefixes.setNsPrefix("rdfs", RDFS.getURI());
 		prefixes.setNsPrefix("sh", SHACL.getURI());
+		prefixes.setNsPrefix("xsd", XSD.getURI());
 		prefixes.setNsPrefix(MLM_Vocabulary.getPrefix(), MLM_Vocabulary.getURI());
 		prefixes.setNsPrefix(m_Prefix, m_NS);
 		return prefixes;
@@ -166,6 +167,8 @@ public class DomainModel {
 			propagateUses();
 			propagatePartiallyUses();
 			deriveInducesClasses();
+			propagatePartOf();
+			updateLevelProperty();
 			
 			//write2File("Iteration" + iIterations);
 			System.out.println("propagateModel iterative change: " + iIterations);
@@ -233,6 +236,13 @@ public class DomainModel {
 		updateModel(statements);
 	}
 	
+	private void propagatePartOf() {
+		ArrayList<String> statements = new ArrayList<String>();
+		String strStatement = "INSERT { ?x <" + MLM_Vocabulary.parOf + "> ?c . }" +
+							  "WHERE { ?x <" + MLM_Vocabulary.of + "> ?c . }";
+		updateModel(strStatement);
+	}
+	
 	private void deriveInducesClasses() {
 		//wenn x partially-use c) gilt, dann wird eine lokale Klasse c(x) abgeleitet. Bereits bestehende Klassen e.g. participant(study) || AffectedParticipant(study)... werden nicht abgeleitet
 		
@@ -289,6 +299,36 @@ public class DomainModel {
 		statements.add(strStatement);		
 		
 		updateModel(statements);
+	}
+	
+	private void updateLevelProperty() {
+		
+		ArrayList<String> statements = new ArrayList<String>();
+		String strStatement = "";
+	
+		
+		strStatement = "DELETE {?s <" + MLM_Vocabulary.level + "> ?o}" +
+				   	   "WHERE { ?s <" + MLM_Vocabulary.level + "> ?o . }";
+		statements.add(strStatement);
+		
+		strStatement = "INSERT { ?s <" + MLM_Vocabulary.level + "> ?level . }" +
+					   "WHERE { " + 
+								"SELECT ?s (count(*)+1 AS ?level)" +
+								"WHERE { " +
+										"?s <" + MLM_Vocabulary.parOf + ">+ ?composite . " +
+								"}" +
+								"GROUP BY ?s" +
+							  "}";
+		statements.add(strStatement);
+		
+		strStatement = "INSERT { ?s <" + MLM_Vocabulary.level + "> 1 . }" +
+				   "WHERE { " + 
+							"?s ?p ?o ." +
+							"FILTER (?o  IN (<" + MLM_Vocabulary.ModeledClass + ">, <" + MLM_Vocabulary.InducedClass + ">, <" + MLM_Vocabulary.DomainObject + "> ))" +
+							"Filter NOT EXISTS { ?s <" + MLM_Vocabulary.parOf + "> ?composite .  }" +							
+						  "}";
+	statements.add(strStatement);
+	updateModel(statements);
 	}
 	
 	private void deriveRdfType(Resource rdfType) {
@@ -417,7 +457,9 @@ public class DomainModel {
 				for (int i = 0; i < straColumnNames.size(); i++) {
 					String strColumnName = straColumnNames.get(i);
 					RDFNode rdfNode = row.get(strColumnName);
-					if (rdfNode.isResource())
+					if(rdfNode == null)
+						resluts.put(strColumnName, "");
+					else if (rdfNode.isResource())
 						resluts.put(strColumnName, substituteUriWithPrefix(rdfNode.asResource()));
 					else
 						resluts.put(strColumnName, rdfNode.toString());
@@ -434,11 +476,18 @@ public class DomainModel {
 		return list;
 	}
 
-	public void writeForceDirectedGraphData2File(String strFilePath) {
+	public void writeForceDirectedGraphData2File(String strFileName) {
 		PrintWriter writer = null;
+		String strRoot = "data" + System.getProperty("file.separator") + "graphic";
 		try {
-			writer = new PrintWriter(strFilePath, "UTF-8");
-			writer.println(getForceDirectedGraphData());
+			File file = new File(strRoot);
+			if (!file.exists())
+				file.mkdirs();
+			if (strFileName.indexOf(".ttl") < 0)
+				strFileName += ".ttl";
+			strFileName = strRoot + System.getProperty("file.separator") + strFileName;
+			writer = new PrintWriter(strFileName, "UTF-8");
+			writer.println(getForceDirectedGraphModeledAndDerivedClasses());
 		} catch (FileNotFoundException | UnsupportedEncodingException e) {
 			e.printStackTrace();
 		} finally {
@@ -521,6 +570,89 @@ public class DomainModel {
 			strLinks += "\"target\": \"" + strObject + "\",";
 			strLinks += "\"type\": \"" + strPredicate + "\"}";
 		}
+		if (strNodes.length() > 0)
+			strNodes = "\"nodes\": [" + System.lineSeparator() + strNodes + System.lineSeparator() + "],"
+					+ System.lineSeparator();
+		if (strLinks.length() > 0)
+			strLinks = "\"links\": [" + System.lineSeparator() + strLinks + System.lineSeparator() + "]"
+					+ System.lineSeparator();
+
+		/*
+		 * { "nodes": [ {"id": "a", "name": "AGGR", "label": "Aggregation", "group":
+		 * "Team C", "runtime": 20, "category":2}, {"id": "b", "name": "ASMT", "label":
+		 * "Assessment Repository", "group": "Team A", "runtime":10} ], "links": [
+		 * {"source": "a", "target": "b", "type": "Next -->>"}, {"source": "b",
+		 * "target": "a", "type": "Next -->>"} ] }
+		 */
+
+		return "{" + System.lineSeparator() + strNodes + strLinks + "}";
+	}
+	
+	public String getForceDirectedGraphModeledAndDerivedClasses() {
+
+		List<String> straNodeList = new ArrayList<String>();
+		String strSubject = "", strComposite = "", strLevel = "", strNodes = "", strLinks = "";
+
+		ArrayList<HashMap<String, String>> list = executeQuery("""
+																select ?s ?c ?l
+																where {
+																  ?s ?p ?o.
+																  optional { ?s voc:subContextOf ?c.}
+																  ?s voc:level ?l
+																  Filter (?o in (voc:ModeledClass, voc:InducedClass, voc:DomainObject))  
+																} ORDER BY ?l ?s
+																""");
+
+		for (int i = 0; i < list.size(); i++) {
+			HashMap<?, ?> map = (HashMap<?, ?>) list.get(i);
+
+			strSubject = map.get("s").toString();
+			strComposite = map.get("c").toString();
+			strLevel = map.get("l").toString();
+			if (strLevel.indexOf("^^") >= 0)
+				strLevel = strLevel.substring(0, strLevel.indexOf("^^"));
+
+			if (!straNodeList.contains(strSubject)) {
+				straNodeList.add(strSubject);
+				if (strNodes.length() != 0)
+					strNodes += "," + System.lineSeparator();
+				strNodes += "{\"id\": \"" + strSubject + "\",";				
+				strNodes += "\"group\": \"" + strLevel + "\",";
+				strNodes += "\"name\": \"" + strSubject + "\",";
+				strNodes += "\"label\": \"" + strSubject + "\",";
+				strNodes += "\"runtime\": 20, \"category\":0}";
+			}
+			if (strSubject.length() > 0 && strComposite.length() > 0) {
+				if (strLinks.length() != 0)
+					strLinks += "," + System.lineSeparator();
+				strLinks += "{\"source\": \"" + strSubject + "\",";
+				strLinks += "\"target\": \"" + strComposite + "\",";
+				strLinks += "\"type\": \"subContextOf\"}";
+			}
+		}
+		
+		list = executeQuery("""
+				select *
+				where {
+				  ?s voc:partOf ?c.
+				  Filter NOT EXISTS {?s rdfs:subClassOf ?x}
+				} 
+				""");
+		for (int i = 0; i < list.size(); i++) {
+			HashMap<?, ?> map = (HashMap<?, ?>) list.get(i);
+
+			strSubject = map.get("s").toString();
+			strComposite = map.get("c").toString();
+			
+			if (strSubject.length() > 0 && strComposite.length() > 0) {
+				if (strLinks.length() != 0)
+					strLinks += "," + System.lineSeparator();
+				strLinks += "{\"source\": \"" + strSubject + "\",";
+				strLinks += "\"target\": \"" + strComposite + "\",";
+				strLinks += "\"type\": \"partOf\"}";
+			}
+		}
+		
 		if (strNodes.length() > 0)
 			strNodes = "\"nodes\": [" + System.lineSeparator() + strNodes + System.lineSeparator() + "],"
 					+ System.lineSeparator();

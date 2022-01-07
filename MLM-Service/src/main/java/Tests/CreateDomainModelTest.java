@@ -12,40 +12,42 @@ public class CreateDomainModelTest {
 		DomainModel dms = new DomainModel("myModel");
 		dms.clearModel();
 		
-		Resource study = dms.modelClass("Study");
-		Resource experimentalStudyDesign = dms.modelAbstarctClass("ExperimentalStudyDesign", study);
-		Resource mrt = dms.modelConcreteClass("MicroRandomizedTrial", experimentalStudyDesign);
-		Resource rct = dms.modelConcreteClass("RandomizedControlledTrial", experimentalStudyDesign);
+//		//example 1
+//		Resource study = dms.modelClass("Study");
+//		Resource experimentalStudyDesign = dms.modelAbstarctClass("ExperimentalStudyDesign", study);
+//		Resource mrt = dms.modelConcreteClass("MicroRandomizedTrial", experimentalStudyDesign);
+//		Resource rct = dms.modelConcreteClass("RandomizedControlledTrial", experimentalStudyDesign);
+//		
+//        Resource participant = dms.modelClass("Participant", study);
+//        Resource affectedParticipant = dms.modelAbstarctClass("AffectedParticipant", participant);
+//        Resource overweightParticipant = dms.modelConcreteClass("OverweightParticipant", affectedParticipant);
+//        Resource participantWithHeartDisease = dms.modelConcreteClass("ParticipantWithHeartDisease", affectedParticipant);
+//        Resource participantWithDiabetes = dms.modelConcreteClass("ParticipantWithDiabetes", affectedParticipant);
+//        Resource healthyParticipant = dms.modelConcreteClass("HealthyParticipant", participant);
+//        
+//        Resource stateOfParticipant = dms.modelOccurrenceClass("StateOfParticipant", participant);
+//        Resource phase1 = dms.modelConcreteClass("Phase1", stateOfParticipant);
+//        Resource phase2 = dms.modelConcreteClass("Phase2", stateOfParticipant);
+//        
+//        Resource heartStudy = dms.createObject("HeartStudy", mrt);
+//        Resource janeInHeartStudy = dms.createObject("JaneInHeartStudy", overweightParticipant, heartStudy);
+//        
+//        dms.createUse(mrt, healthyParticipant);
+//        dms.createUse(participant, phase1);
 		
-        Resource participant = dms.modelClass("Participant", study);
-        Resource affectedParticipant = dms.modelAbstarctClass("AffectedParticipant", participant);
-        Resource overweightParticipant = dms.modelConcreteClass("OverweightParticipant", affectedParticipant);
-        Resource participantWithHeartDisease = dms.modelConcreteClass("ParticipantWithHeartDisease", affectedParticipant);
-        Resource participantWithDiabetes = dms.modelConcreteClass("ParticipantWithDiabetes", affectedParticipant);
-        Resource healthyParticipant = dms.modelConcreteClass("HealthyParticipant", participant);
-        
-        Resource stateOfParticipant = dms.modelOccurrenceClass("StateOfParticipant", participant);
-        Resource phase1 = dms.modelConcreteClass("Phase1", stateOfParticipant);
-        Resource phase2 = dms.modelConcreteClass("Phase2", stateOfParticipant);
-        
-        Resource heartStudy = dms.createObject("HeartStudy", mrt);
-        Resource janeInHeartStudy = dms.createObject("JaneInHeartStudy", overweightParticipant, heartStudy);
-        
-        dms.createUse(mrt, healthyParticipant);
-        dms.createUse(participant, phase1);
-        
-        /*Resource observation = dms.createOccurrenceClass("Observation", stateOfParticipant);
-        Resource distalOutcome = dms.createOccurrenceClass("DistalOutcome", stateOfParticipant);
-        Resource jitai = dms.createOccurrenceClass("Jitai", stateOfParticipant);
-        
-        Resource interventionOption = dms.createOccurrenceClass("InterventionOption", jitai);
-        Resource proximalOutcome = dms.createOccurrenceClass("ProximalOutcome", jitai);*/
-               
-        dms.printCount();
+		// example 2
+		Resource study = dms.modelClass("Study");
+		Resource mrt = dms.modelConcreteClass("MicroRandomizedTrial", study);
+
+		Resource participant = dms.modelClass("Participant", study);
+		Resource studentParticipant = dms.modelConcreteClass("StudentParticipant", participant);
+		Resource femaleParticipant = dms.modelConcreteClass("FemaleParticipant", participant);
+
+		dms.createUse(mrt, femaleParticipant);
+
         dms.propagateModel();
-        dms.printCount();
         dms.print();
-        dms.writeForceDirectedGraphData2File("/Volumes/GoogleDrive/Meine Ablage/2021_Masterarbeit_JITAIs/D3/observable/graph.json");
+        dms.writeForceDirectedGraphData2File("graph.json");
         dms.printInducedClasses();
         dms.write2File();
 //        dms.writeForceDirectedGraphData2File("/Volumes/GoogleDrive/Meine Ablage/2021_Masterarbeit_JITAIs/D3/observable/graph.json");
